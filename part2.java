@@ -5,17 +5,31 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.Scanner;
 
+/* Name: Aidan Weinreber
+ * Date: 10/23/23
+ * Description: Neural network that can train randomly or input a previously saved weights and biases
+ *              User is capable of inputting to determine what they wish to do and gain more options once they have a trained network
+ *              Network contains a 784-20-10 node network to evaluate a 28 by 28 image to determine what number is contained.
+ *              The output for each image is transferred into a 1 hot vector to compare to the label that is also a 1 hot vector.
+ *              Secondary user input allows the user to iterate over the training and test sets, as well as display the ascii representation of the numbers being read, and 
+ *              the ability to save the current state of the network.
+ * 
+ */
+
 public class part2 {
+
+    //layer variables, can be changed to update inputs, hidden layer, or output. 
     private static int layerOneNodes = 784;
-    private static int layerTwoNodes = 20;
-    private static int layerThreeNOdes = 15;
+    private static int layerTwoNodes = 15;
     private static int layerOutputNodes = 10;
 
+    //sets are loaded at all times to be used
     private static double[][] trainingSet = new double[60000][layerOneNodes];
     private static double[] trainingOutput = new double[60000];
     private static double[][] testSet = new double[10000][layerOneNodes];
     private static double[] testOutput = new double[10000];
 
+    //weights and biases for each layer
     private static double[][] weightsToHidden = new double[layerTwoNodes][layerOneNodes];
     private static double[][] weightsToOutput = new double[layerOutputNodes][layerTwoNodes];
     private static double[] biasForHidden = new double[layerTwoNodes];
@@ -26,8 +40,9 @@ public class part2 {
     private static Scanner userInput;
 
 
-    private static double eta = 10;
+    private static double eta = 1;
     
+    //main will load in all inputs from training and test set, then go to user input
     public static void main(String[] args) throws IOException{
         loadTrainingSet(trainingSet, trainingOutput);
         scaleInputs(trainingSet);
@@ -39,7 +54,7 @@ public class part2 {
     // functions to load sets and scale them appropriately
     //
     
-    //funciton to load training set
+    //funciton to load training set. Divides the training set into labels and pixels
     public static void loadTrainingSet(double[][] trainingInput, double[] trainingOutput)throws IOException{
         double[][] trainingSetFinal = new double[60000][785];
         Scanner sc = new Scanner(new File("mnist_train.csv"));
@@ -60,7 +75,7 @@ public class part2 {
         }
     }
 
-    //function to load test set
+    //function to load test set and separates the labels and pixels
     public static void loadTestSet(double[][] testInput, double[] testOutput)throws IOException{
         double[][] testSetFinal = new double[10000][785];
         Scanner sc = new Scanner(new File("mnist_test.csv"));
@@ -161,6 +176,9 @@ public class part2 {
             else if(input.equals("7")){
                 saveNetworkState();
             }
+            else{
+                System.out.println("Invalid input. Just input the number.");
+            }
         }
     }
 
@@ -198,10 +216,10 @@ public class part2 {
                     System.out.print("\t");
                     for(int j = 0; j<=dimensions-1;j++){
                         if(testSet[test][currentPixel] == 0){
-                            System.out.print(" ");
+                            System.out.print("  ");
                         }
                         else{
-                            char asciiRepresentation = (char) (testSet[test][currentPixel] * 255);
+                            char asciiRepresentation = (char) (int) (testSet[test][currentPixel] * 255);
                             System.out.print(asciiRepresentation + " ");
                         }
                         currentPixel++;
@@ -227,10 +245,10 @@ public class part2 {
                     System.out.print("\t");
                     for(int j = 0; j<=dimensions-1;j++){
                         if(testSet[test][currentPixel] == 0){
-                            System.out.print(" ");
+                            System.out.print("  ");
                         }
                         else{
-                            char asciiRepresentation = (char) (testSet[test][currentPixel] * 255);
+                            char asciiRepresentation = (char) (int) (testSet[test][currentPixel] * 255);
                             System.out.print(asciiRepresentation + " ");
                         }
                         currentPixel++;
@@ -252,7 +270,7 @@ public class part2 {
     //   end of section
     //
 
-    //function to train network
+    //function to train network by generating random weights and biases and adjusting off those.
     public static void trainNetwork()throws IOException{
         weightsToHidden = generateRandomWeights(weightsToHidden);
         weightsToOutput = generateRandomWeights(weightsToOutput);
@@ -272,8 +290,9 @@ public class part2 {
         int randInt;
 
         //epoch and minibatch(10 training sets each) each epoch goes over all inputs, each mini batch  runs the same amount of inputs(though different)
+        //I found that the best accuracy that I was getting was found with large mini-batch sizes
         for(int epoch = 0; epoch<=59; epoch++){
-            for(int mini = 0; mini<=9; mini++){
+            for(int mini = 0; mini<=1999; mini++){
                 for(int set = 0; set<=miniBatchSize-1;set++){
                     randInt = rand.nextInt(59999);
 
@@ -307,7 +326,7 @@ public class part2 {
         
     }
 
-    //run over training set once
+    //run over training set once and determines the accuracy of the current weights and biases
     public static void runTrainingSet(){
         int[] totalNumbers = {0,0,0,0,0,0,0,0,0,0};
         int[] correctNumbers = {0,0,0,0,0,0,0,0,0,0};
@@ -327,7 +346,7 @@ public class part2 {
          accuracyGenerator(correctNumbers, totalNumbers);
     }
 
-    //run over test set once
+    //run over test set once and determinese the accuracy of the current weights and biases
     public static void runTestSet(){
         int[] totalNumbers = {0,0,0,0,0,0,0,0,0,0};
         int[] correctNumbers = {0,0,0,0,0,0,0,0,0,0};
@@ -392,7 +411,7 @@ public class part2 {
         totalOccurances[onePosition] += 1;
     }
 
-    //generate one hot vecotr for actual output
+    //generate one hot vector for actual output
     public static double[] generateOneHotVectorOutput(double[] actualInputs){
         double[] result = {0,0,0,0,0,0,0,0,0,0};
         int max = 0;
@@ -406,14 +425,14 @@ public class part2 {
         return result;
     }
 
-    //generate one hot vector for expected
+    //generate one hot vector for expected output
     public static double[] generateOneHotVector(double expectedOutput){
         double[] result = {0,0,0,0,0,0,0,0,0,0};
         result[(int) expectedOutput] = 1;
         return result;
     }
 
-    //function to generate random weights
+    //function to generate random weights for training the network
     public static double[][] generateRandomWeights(double[][] weightFrame){
         double[][] weights = new double[weightFrame.length][weightFrame[0].length];
         Random rand = new Random();
@@ -427,7 +446,7 @@ public class part2 {
         return weights;
     }
 
-    //function to generate random biases
+    //function to generate random biases for training the network
     public static double[] generateRandomBiases(double[] biasFrame){
         double[] biases = new double[biasFrame.length];
         Random rand = new Random();
@@ -439,7 +458,7 @@ public class part2 {
         return biases;
     }
 
-    //function to load weights from a file
+    //function to load weights from a file, will give an error if the file does not exist.
     public static void loadNetworkState(){
         try{
             Scanner sc = new Scanner(new File("saveState.csv"));
@@ -469,7 +488,7 @@ public class part2 {
         
     }
 
-    //saves the current network into a csv format that can be loaded back into this file
+    //saves the current network into a csv format that can be loaded back into this file, files is save with one-hidden weights, hidden-output weights, one-hidden biases, hidden-output biases
     public static void saveNetworkState(){
         try{
             FileWriter toFile = new FileWriter(saveState);
@@ -584,7 +603,7 @@ public class part2 {
         return weightGradient;
     }
 
-    //calculates the new biases for each layer and stores them in a nX1 matrix
+    //calculates the new biases for each layer and stores them in a nX1 matrix, pulls in a 2d matrix of bias gradients
     public static double[] calculateNewBias(double[] originalBias, double trainingRate, double[][] biasGradient){
         double[] newBias = new double[originalBias.length];
         double sum = 0;
@@ -599,7 +618,7 @@ public class part2 {
         return newBias;
     }
 
-    //calucaltes the new weights for each layer and stores them in a mXn matrix
+    //calucaltes the new weights for each layer and stores them in a mXn matrix, pulls in a 3d matrix of weight gradients
     public static double[][] calculateNewWeights(double[][] originalWeights, double trainingRate, double[][][] weightGradients){
         double[][] newWeights = new double[originalWeights.length][originalWeights[0].length];
         double sum = 0;
@@ -609,8 +628,8 @@ public class part2 {
                 for(int k = 0;k<=weightGradients.length-1;k++){
                     sum += weightGradients[k][i][j];
                 }
-                 newWeights[i][j] = originalWeights[i][j] - ((trainingRate/((double)weightGradients.length)) * (sum));
-                 sum = 0;
+                newWeights[i][j] = originalWeights[i][j] - ((trainingRate/((double)weightGradients.length)) * (sum));
+                sum = 0;
             }
         }
         
